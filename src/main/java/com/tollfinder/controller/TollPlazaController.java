@@ -1,15 +1,16 @@
 
 package com.tollfinder.controller;
 
-import com.tollfinder.dto.TollPlazaMatch;
 import com.tollfinder.dto.TollPlazaRequest;
+import com.tollfinder.dto.TollPlazaResponse;
 import com.tollfinder.service.TollPlazaService;
+
 import jakarta.validation.Valid;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/toll-plazas")
@@ -23,8 +24,8 @@ public class TollPlazaController {
   }
 
   @PostMapping
-  @Operation(summary = "Find toll plazas between two pincodes", description = "Returns toll plazas along the driving route, ordered by distance from the source.")
-  public List<TollPlazaMatch> findTollPlazas(
+  @Operation(summary = "Find toll plazas between two pincodes", description = "Returns toll plazas along the driving route.")
+  public TollPlazaResponse findTollPlazas(
       @Valid @RequestBody TollPlazaRequest request) {
 
     return tollPlazaService.findTollPlazas(request);

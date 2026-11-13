@@ -1,7 +1,7 @@
 
 package com.tollfinder.controller;
 
-import com.tollfinder.dto.TollPlazaMatch;
+import com.tollfinder.dto.TollPlazaResponse;
 import com.tollfinder.service.TollPlazaService;
 
 import org.junit.jupiter.api.Test;
@@ -27,99 +27,103 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import(TollPlazaControllerTest.TestCacheConfig.class)
 class TollPlazaControllerTest {
 
-  @Autowired
-  private MockMvc mockMvc;
+    @Autowired
+    private MockMvc mockMvc;
 
-  @MockitoBean
-  private TollPlazaService tollPlazaService;
+    @MockitoBean
+    private TollPlazaService tollPlazaService;
 
-  @TestConfiguration
-  static class TestCacheConfig {
+    @TestConfiguration
+    static class TestCacheConfig {
 
-    @Bean
-    CacheManager cacheManager() {
-      return new ConcurrentMapCacheManager("tollPlazas");
+        @Bean
+        CacheManager cacheManager() {
+            return new ConcurrentMapCacheManager("tollPlazas");
+        }
     }
-  }
 
-  @Test
-  void shouldRejectInvalidSourcePincode() throws Exception {
+    @Test
+    void shouldRejectInvalidSourcePincode() throws Exception {
 
-    String request = """
-        {
-            "sourcePincode": "123",
-            "destinationPincode": "411045"
-        }
-        """;
+        String request = """
+                {
+                    "sourcePincode": "123",
+                    "destinationPincode": "411045"
+                }
+                """;
 
-    mockMvc.perform(post("/api/v1/toll-plazas")
-        .contentType(MediaType.APPLICATION_JSON)
-        .content(request))
-        .andExpect(status().isBadRequest())
-        .andExpect(jsonPath("$.message")
-            .value("Source pincode must be a valid 6-digit Indian pincode"));
+        mockMvc.perform(post("/api/v1/toll-plazas")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(request))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message")
+                        .value("Source pincode must be a valid 6-digit Indian pincode"));
 
-    verifyNoInteractions(tollPlazaService);
-  }
+        verifyNoInteractions(tollPlazaService);
+    }
 
-  @Test
-  void shouldRejectInvalidDestinationPincode() throws Exception {
+    @Test
+    void shouldRejectInvalidDestinationPincode() throws Exception {
 
-    String request = """
-        {
-            "sourcePincode": "560064",
-            "destinationPincode": "123"
-        }
-        """;
+        String request = """
+                {
+                    "sourcePincode": "560064",
+                    "destinationPincode": "123"
+                }
+                """;
 
-    mockMvc.perform(post("/api/v1/toll-plazas")
-        .contentType(MediaType.APPLICATION_JSON)
-        .content(request))
-        .andExpect(status().isBadRequest())
-        .andExpect(jsonPath("$.message")
-            .value("Destination pincode must be a valid 6-digit Indian pincode"));
+        mockMvc.perform(post("/api/v1/toll-plazas")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(request))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message")
+                        .value("Destination pincode must be a valid 6-digit Indian pincode"));
 
-    verifyNoInteractions(tollPlazaService);
-  }
+        verifyNoInteractions(tollPlazaService);
+    }
 
-  @Test
-  void shouldRejectMissingSourcePincode() throws Exception {
+    @Test
+    void shouldRejectMissingSourcePincode() throws Exception {
 
-    String request = """
-        {
-            "destinationPincode": "411045"
-        }
-        """;
+        String request = """
+                {
+                    "destinationPincode": "411045"
+                }
+                """;
 
-    mockMvc.perform(post("/api/v1/toll-plazas")
-        .contentType(MediaType.APPLICATION_JSON)
-        .content(request))
-        .andExpect(status().isBadRequest())
-        .andExpect(jsonPath("$.message")
-            .value("Source pincode is required"));
+        mockMvc.perform(post("/api/v1/toll-plazas")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(request))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message")
+                        .value("Source pincode is required"));
 
-    verifyNoInteractions(tollPlazaService);
-  }
+        verifyNoInteractions(tollPlazaService);
+    }
 
-  @Test
-  void shouldAcceptValidRequest() throws Exception {
+    @Test
+    void shouldReturnNoTollsMessageWhenNoTollsFound() throws Exception {
 
-    String request = """
-        {
-            "sourcePincode": "560064",
-            "destinationPincode": "411045"
-        }
-        """;
+        String request = """
+                {
+                    "sourcePincode": "560064",
+                    "destinationPincode": "411045"
+                }
+                """;
 
-    when(tollPlazaService.findTollPlazas(any()))
-        .thenReturn(List.<TollPlazaMatch>of());
+        when(tollPlazaService.findTollPlazas(any()))
+                .thenReturn(new TollPlazaResponse(
+                        "No toll plazas found between the given locations.",
+                        List.of()));
 
-    mockMvc.perform(post("/api/v1/toll-plazas")
-        .contentType(MediaType.APPLICATION_JSON)
-        .content(request))
-        .andExpect(status().isOk())
-        .andExpect(content().json("[]"));
+        mockMvc.perform(post("/api/v1/toll-plazas")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(request))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message")
+                        .value("No toll plazas found between the given locations."))
+                .andExpect(jsonPath("$.tollPlazas").isEmpty());
 
-    verify(tollPlazaService, times(1)).findTollPlazas(any());
-  }
+        verify(tollPlazaService, times(1)).findTollPlazas(any());
+    }
 }

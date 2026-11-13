@@ -14,59 +14,66 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-  @ExceptionHandler(MethodArgumentNotValidException.class)
-  public ResponseEntity<Map<String, Object>> handleValidation(
-      MethodArgumentNotValidException ex) {
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<Map<String, Object>> handleValidation(
+            MethodArgumentNotValidException ex) {
 
-    String message = ex.getBindingResult()
-        .getFieldErrors()
-        .stream()
-        .findFirst()
-        .map(error -> error.getDefaultMessage())
-        .orElse("Invalid request");
+        String message = ex.getBindingResult()
+                .getFieldErrors()
+                .stream()
+                .findFirst()
+                .map(error -> error.getDefaultMessage())
+                .orElse("Invalid request");
 
-    return buildResponse(
-        HttpStatus.BAD_REQUEST,
-        message);
-  }
+        return buildResponse(HttpStatus.BAD_REQUEST, message);
+    }
 
-  @ExceptionHandler(RestClientResponseException.class)
-  public ResponseEntity<Map<String, Object>> handleMapplsError(
-      RestClientResponseException ex) {
+    @ExceptionHandler(PincodeApiException.class)
+    public ResponseEntity<Map<String, Object>> handlePincodeApiError(
+            PincodeApiException ex) {
 
-    return buildResponse(
-        HttpStatus.BAD_GATEWAY,
-        "Unable to get route from Mappls API");
-  }
+        return buildResponse(
+                HttpStatus.BAD_GATEWAY,
+                ex.getMessage());
+    }
 
-  @ExceptionHandler(IllegalArgumentException.class)
-  public ResponseEntity<Map<String, Object>> handleBadRequest(
-      IllegalArgumentException ex) {
+    @ExceptionHandler(RestClientResponseException.class)
+    public ResponseEntity<Map<String, Object>> handleMapplsError(
+            RestClientResponseException ex) {
 
-    return buildResponse(
-        HttpStatus.BAD_REQUEST,
-        ex.getMessage());
-  }
+        return buildResponse(
+                HttpStatus.BAD_GATEWAY,
+                "Unable to get route from Mappls API");
+    }
 
-  @ExceptionHandler(Exception.class)
-  public ResponseEntity<Map<String, Object>> handleGeneralError(
-      Exception ex) {
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String, Object>> handleBadRequest(
+            IllegalArgumentException ex) {
 
-    return buildResponse(
-        HttpStatus.INTERNAL_SERVER_ERROR,
-        "Something went wrong. Please try again later.");
-  }
+        return buildResponse(
+                HttpStatus.BAD_REQUEST,
+                ex.getMessage());
+    }
 
-  private ResponseEntity<Map<String, Object>> buildResponse(
-      HttpStatus status,
-      String message) {
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<Map<String, Object>> handleGeneralError(
+            Exception ex) {
 
-    Map<String, Object> response = Map.of(
-        "timestamp", LocalDateTime.now().toString(),
-        "status", status.value(),
-        "error", status.getReasonPhrase(),
-        "message", message);
+        return buildResponse(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                "Something went wrong. Please try again later.");
+    }
 
-    return ResponseEntity.status(status).body(response);
-  }
+    private ResponseEntity<Map<String, Object>> buildResponse(
+            HttpStatus status,
+            String message) {
+
+        Map<String, Object> response = Map.of(
+                "timestamp", LocalDateTime.now().toString(),
+                "status", status.value(),
+                "error", status.getReasonPhrase(),
+                "message", message);
+
+        return ResponseEntity.status(status).body(response);
+    }
 }
