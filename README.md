@@ -1,18 +1,25 @@
 # Toll Plaza Finder
 
-Toll Plaza Finder is a Spring Boot application that finds toll plazas between two Indian PIN codes.
+Toll Plaza Finder is a Spring Boot project that helps find toll plazas between two Indian PIN codes.
 
-It uses the Mappls Routing API to get the route and checks which toll plazas are located along that route. The toll plaza details are stored in a PostgreSQL database.
+The application uses the Mappls Routing API to get the driving route and identifies toll plazas located along the way. Toll plaza information is stored in a PostgreSQL database.
 
-## What does this project do?
+## Live Demo
 
-- Takes source and destination PIN codes as input.
+- **Live Application:** https://toll-plaza-finder.onrender.com
+- **Swagger UI:** https://toll-plaza-finder.onrender.com/swagger-ui/index.html
+- **API Documentation:** https://toll-plaza-finder.onrender.com/v3/api-docs
+- **GitHub Repository:** https://github.com/Vijay-krishnaa/toll-plaza-finder
+
+## What Does This Project Do?
+
+- Accepts source and destination PIN codes.
 - Finds the driving route between the two locations.
-- Finds toll plazas along the route.
-- Returns toll plaza names, coordinates, and distance from the source.
-- Uses caching to avoid making the same API request repeatedly.
-- Validates PIN codes and handles errors.
-- Filters duplicate toll plaza results.
+- Checks which toll plazas are available along the route.
+- Returns toll plaza names, coordinates, and distance from the starting point.
+- Uses caching to reduce repeated API requests.
+- Checks PIN code formats and handles errors.
+- Removes duplicate toll plaza results.
 
 ## Technologies Used
 
@@ -49,7 +56,7 @@ src/
 
 ## Requirements
 
-Make sure you have the following installed:
+To run this project, you need:
 
 - Java 21
 - Maven
@@ -58,7 +65,7 @@ Make sure you have the following installed:
 
 ## Environment Variables
 
-Before running the application, configure these environment variables:
+Set up the following environment variables before running the application:
 
 | Variable         | Description                      |
 | ---------------- | -------------------------------- |
@@ -68,34 +75,44 @@ Before running the application, configure these environment variables:
 | `DB_PASSWORD`    | Database password                |
 | `PORT`           | Application port (default: 8080) |
 
-For local development, the database URL can be:
+For local development, use this database URL:
 
-`jdbc:postgresql://localhost:5432/toll_finder`
+```text
+jdbc:postgresql://localhost:5432/toll_finder
+```
 
-Do not upload your actual API key or database password to GitHub.
+Make sure you do not upload your actual API key or database password to GitHub.
 
 ## How to Run
 
-First, clone the repository:
+### 1. Clone the repository
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/toll-plaza-finder.git
+git clone https://github.com/Vijay-krishnaa/toll-plaza-finder.git
 cd toll-plaza-finder
 ```
 
-Build the project:
+### 2. Build the project
 
 ```bash
 mvn clean install
 ```
 
-Start the application:
+### 3. Start the application
 
 ```bash
 mvn spring-boot:run
 ```
 
-The application will run at `http://localhost:8080`.
+## Local Application Links
+
+Once the application starts, you can access it using these links:
+
+- **Local Application:** http://localhost:8080
+- **Local Swagger UI:** http://localhost:8080/swagger-ui/index.html
+- **Local API Documentation:** http://localhost:8080/v3/api-docs
+
+Note: These links work only on your computer while the application is running.
 
 ## API Details
 
@@ -110,23 +127,22 @@ The application will run at `http://localhost:8080`.
 }
 ```
 
-The API returns a list of toll plazas found along the route, including their names, locations, and distances.
+The API returns the toll plazas found along the route, along with their names, coordinates, and distance from the source.
 
 ## Swagger Documentation
 
-After starting the application, open:
+I have added Swagger UI so the API can be explored and tested directly from a browser.
 
-`http://localhost:8080/swagger-ui/index.html`
-
-You can use Swagger UI to test the API directly.
+- **Live Swagger UI:** https://toll-plaza-finder.onrender.com/swagger-ui/index.html
+- **Local Swagger UI:** http://localhost:8080/swagger-ui/index.html
 
 ## Caching
 
-I have used Caffeine caching to store the results for previously requested PIN-code combinations. Cached results expire after 30 minutes.
+The application uses Caffeine Cache to save results for previously requested PIN-code combinations. Cached results are kept for 30 minutes, which helps avoid making the same API request repeatedly.
 
 ## Running Tests
 
-To run the test cases, use:
+Run the following command to execute the test cases:
 
 ```bash
 mvn clean test
@@ -134,13 +150,12 @@ mvn clean test
 
 The project includes tests for request validation, controller behaviour, service logic, and application startup.
 
-## A Note About Route Matching
+## Route Matching
 
-The application uses Mappls to calculate the driving route. Toll plazas are matched against the route using their coordinates.
+Mappls is used to calculate the driving route. The application compares toll plaza coordinates with the route to find toll plazas located along the way.
 
-PIN-code locations are representative locations returned by Mappls, rather than exact postal addresses. Duplicate toll plaza results are also filtered using normalized names and location proximity.
+The PIN-code locations returned by Mappls are representative locations, not exact postal addresses. The application also filters duplicate toll plaza results using normalized names and location proximity.
 
 ## License
 
-This project was created as a technical assignment.
-"# toll-plaza-finder" 
+This project was developed as part of a technical assignment.
