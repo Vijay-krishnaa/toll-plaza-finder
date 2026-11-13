@@ -1,6 +1,7 @@
 
 package com.tollfinder.controller;
 
+import com.tollfinder.dto.RouteResponse;
 import com.tollfinder.dto.TollPlazaResponse;
 import com.tollfinder.service.TollPlazaService;
 
@@ -102,7 +103,7 @@ class TollPlazaControllerTest {
     }
 
     @Test
-    void shouldReturnNoTollsMessageWhenNoTollsFound() throws Exception {
+    void shouldReturnEmptyTollPlazasWhenNoTollsFound() throws Exception {
 
         String request = """
                 {
@@ -113,15 +114,16 @@ class TollPlazaControllerTest {
 
         when(tollPlazaService.findTollPlazas(any()))
                 .thenReturn(new TollPlazaResponse(
-                        "No toll plazas found between the given locations.",
+                        new RouteResponse("560064", "411045", 847.78),
                         List.of()));
 
         mockMvc.perform(post("/api/v1/toll-plazas")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(request))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.message")
-                        .value("No toll plazas found between the given locations."))
+                .andExpect(jsonPath("$.route.sourcePincode").value("560064"))
+                .andExpect(jsonPath("$.route.destinationPincode").value("411045"))
+                .andExpect(jsonPath("$.route.distanceInKm").value(847.78))
                 .andExpect(jsonPath("$.tollPlazas").isEmpty());
 
         verify(tollPlazaService, times(1)).findTollPlazas(any());

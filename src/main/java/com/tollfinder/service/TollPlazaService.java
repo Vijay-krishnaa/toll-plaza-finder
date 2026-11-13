@@ -4,9 +4,12 @@ package com.tollfinder.service;
 import com.tollfinder.dto.TollPlazaMatch;
 import com.tollfinder.dto.TollPlazaRequest;
 import com.tollfinder.dto.TollPlazaResponse;
+import com.tollfinder.dto.RouteResponse;
 
 import org.springframework.stereotype.Service;
 import org.springframework.cache.annotation.Cacheable;
+
+import tools.jackson.databind.JsonNode;
 
 import java.util.List;
 
@@ -48,18 +51,30 @@ public class TollPlazaService {
           "Invalid destination PIN code: " + destination);
     }
 
-    var routeResponse = routingService.getRoute(source, destination);
+    JsonNode mapplsRoute = routingService.getRoute(source, destination);
 
-    List<TollPlazaMatch> tolls = routeMatcher.findTollsAlongRoute(routeResponse);
+    if (mapplsRoute == null
+        || !mapplsRoute.has("routes")
+        || !mapplsRoute.path("routes").isArray()
+        || mapplsRoute.path("routes").isEmpty()) {
 
-    if (tolls.isEmpty()) {
-      return new TollPlazaResponse(
-          "No toll plazas found between the given locations.",
-          List.of());
+      throw new IllegalArgumentException(
+          "No route found between the given PIN codes.");
     }
 
-    return new TollPlazaResponse(
-        "Toll plazas found successfully.",
-        tolls);
+    double distanceInKm = mapplsRoute
+        .path("routes")
+        .get(0)
+        .path("distance")
+        .asDouble() / 1000.0;
+
+    List<TollPlazaMatch> tolls = routeMatcher.findTollsAlongRoute(mapplsRoute);
+
+    RouteResponse route = new RouteResponse(
+        source,
+        destination,
+        distanceInKm);
+
+    return new TollPlazaResponse(route, tolls);
   }
 }

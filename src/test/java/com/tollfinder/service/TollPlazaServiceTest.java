@@ -1,6 +1,7 @@
 
 package com.tollfinder.service;
 
+import com.tollfinder.dto.RouteResponse;
 import com.tollfinder.dto.TollPlazaRequest;
 import com.tollfinder.dto.TollPlazaResponse;
 
@@ -20,110 +21,124 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class TollPlazaServiceTest {
 
-  @Mock
-  private MapplsRoutingService routingService;
+    @Mock
+    private MapplsRoutingService routingService;
 
-  @Mock
-  private TollPlazaRouteMatcher routeMatcher;
+    @Mock
+    private TollPlazaRouteMatcher routeMatcher;
 
-  @Mock
-  private PincodeValidationService pincodeValidationService;
+    @Mock
+    private PincodeValidationService pincodeValidationService;
 
-  @InjectMocks
-  private TollPlazaService tollPlazaService;
+    @InjectMocks
+    private TollPlazaService tollPlazaService;
 
-  @Test
-  void shouldThrowExceptionWhenSourceAndDestinationAreSame() {
+    @Test
+    void shouldThrowExceptionWhenSourceAndDestinationAreSame() {
 
-    TollPlazaRequest request = new TollPlazaRequest("560064", "560064");
+        TollPlazaRequest request = new TollPlazaRequest("560064", "560064");
 
-    IllegalArgumentException exception = assertThrows(
-        IllegalArgumentException.class,
-        () -> tollPlazaService.findTollPlazas(request));
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> tollPlazaService.findTollPlazas(request));
 
-    assertEquals(
-        "Source and destination PIN codes cannot be the same.",
-        exception.getMessage());
+        assertEquals(
+                "Source and destination PIN codes cannot be the same.",
+                exception.getMessage());
 
-    verifyNoInteractions(
-        routingService,
-        routeMatcher,
-        pincodeValidationService);
-  }
+        verifyNoInteractions(
+                routingService,
+                routeMatcher,
+                pincodeValidationService);
+    }
 
-  @Test
-  void shouldReturnMessageWhenNoTollPlazasAreFound() {
+    @Test
+    void shouldReturnEmptyTollPlazasWhenNoTollsAreFound() {
 
-    TollPlazaRequest request = new TollPlazaRequest("560064", "411045");
+        TollPlazaRequest request = new TollPlazaRequest("560064", "411045");
 
-    when(pincodeValidationService.isValidPincode("560064"))
-        .thenReturn(true);
+        when(pincodeValidationService.isValidPincode("560064"))
+                .thenReturn(true);
 
-    when(pincodeValidationService.isValidPincode("411045"))
-        .thenReturn(true);
+        when(pincodeValidationService.isValidPincode("411045"))
+                .thenReturn(true);
 
-    JsonNode routeResponse = mock(JsonNode.class);
+        // Mock Mappls route response
+        JsonNode routeResponse = mock(JsonNode.class);
+        JsonNode routesNode = mock(JsonNode.class);
+        JsonNode firstRoute = mock(JsonNode.class);
+        JsonNode distanceNode = mock(JsonNode.class);
 
-    when(routingService.getRoute("560064", "411045"))
-        .thenReturn(routeResponse);
+        when(routeResponse.has("routes")).thenReturn(true);
+        when(routeResponse.path("routes")).thenReturn(routesNode);
+        when(routesNode.isArray()).thenReturn(true);
+        when(routesNode.isEmpty()).thenReturn(false);
+        when(routesNode.get(0)).thenReturn(firstRoute);
+        when(firstRoute.path("distance")).thenReturn(distanceNode);
+        when(distanceNode.asDouble()).thenReturn(847780.0);
 
-    when(routeMatcher.findTollsAlongRoute(routeResponse))
-        .thenReturn(List.of());
+        when(routingService.getRoute("560064", "411045"))
+                .thenReturn(routeResponse);
 
-    TollPlazaResponse result = tollPlazaService.findTollPlazas(request);
+        when(routeMatcher.findTollsAlongRoute(routeResponse))
+                .thenReturn(List.of());
 
-    assertEquals(
-        "No toll plazas found between the given locations.",
-        result.message());
+        TollPlazaResponse result = tollPlazaService.findTollPlazas(request);
 
-    assertTrue(result.tollPlazas().isEmpty());
+        assertNotNull(result.route());
+        assertEquals("560064", result.route().sourcePincode());
+        assertEquals("411045", result.route().destinationPincode());
+        assertEquals(847.78, result.route().distanceInKm(), 0.01);
 
-    verify(pincodeValidationService).isValidPincode("560064");
-    verify(pincodeValidationService).isValidPincode("411045");
+        assertNotNull(result.tollPlazas());
+        assertTrue(result.tollPlazas().isEmpty());
 
-    verify(routingService).getRoute("560064", "411045");
+        verify(pincodeValidationService).isValidPincode("560064");
+        verify(pincodeValidationService).isValidPincode("411045");
 
-    verify(routeMatcher).findTollsAlongRoute(routeResponse);
-  }
+        verify(routingService).getRoute("560064", "411045");
 
-  @Test
-  void shouldThrowExceptionWhenSourcePincodeIsInvalid() {
+        verify(routeMatcher).findTollsAlongRoute(routeResponse);
+    }
 
-    TollPlazaRequest request = new TollPlazaRequest("123456", "411045");
+    @Test
+    void shouldThrowExceptionWhenSourcePincodeIsInvalid() {
 
-    when(pincodeValidationService.isValidPincode("123456"))
-        .thenReturn(false);
+        TollPlazaRequest request = new TollPlazaRequest("123456", "411045");
 
-    IllegalArgumentException exception = assertThrows(
-        IllegalArgumentException.class,
-        () -> tollPlazaService.findTollPlazas(request));
+        when(pincodeValidationService.isValidPincode("123456"))
+                .thenReturn(false);
 
-    assertEquals(
-        "Invalid source PIN code: 123456",
-        exception.getMessage());
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> tollPlazaService.findTollPlazas(request));
 
-    verifyNoInteractions(routingService, routeMatcher);
-  }
+        assertEquals(
+                "Invalid source PIN code: 123456",
+                exception.getMessage());
 
-  @Test
-  void shouldThrowExceptionWhenDestinationPincodeIsInvalid() {
+        verifyNoInteractions(routingService, routeMatcher);
+    }
 
-    TollPlazaRequest request = new TollPlazaRequest("560064", "123456");
+    @Test
+    void shouldThrowExceptionWhenDestinationPincodeIsInvalid() {
 
-    when(pincodeValidationService.isValidPincode("560064"))
-        .thenReturn(true);
+        TollPlazaRequest request = new TollPlazaRequest("560064", "123456");
 
-    when(pincodeValidationService.isValidPincode("123456"))
-        .thenReturn(false);
+        when(pincodeValidationService.isValidPincode("560064"))
+                .thenReturn(true);
 
-    IllegalArgumentException exception = assertThrows(
-        IllegalArgumentException.class,
-        () -> tollPlazaService.findTollPlazas(request));
+        when(pincodeValidationService.isValidPincode("123456"))
+                .thenReturn(false);
 
-    assertEquals(
-        "Invalid destination PIN code: 123456",
-        exception.getMessage());
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> tollPlazaService.findTollPlazas(request));
 
-    verifyNoInteractions(routingService, routeMatcher);
-  }
+        assertEquals(
+                "Invalid destination PIN code: 123456",
+                exception.getMessage());
+
+        verifyNoInteractions(routingService, routeMatcher);
+    }
 }
